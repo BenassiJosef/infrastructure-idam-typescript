@@ -43,18 +43,24 @@ export class InfrastructureIdamTypescriptStack extends cdk.Stack {
         phone: false
       },
       standardAttributes: {
+        // this is "name in coginto console"
         fullname: {
           required: true,
           mutable: false,
         },
         address: {
-          required: false,
+          required: true,
           mutable: false,
         },
         email: {
           required: true,
           mutable: false
         },
+        familyName: {
+          required: true,
+          mutable: false
+        },
+        
       },
       customAttributes: {
         'terms': new cognito.BooleanAttribute({ mutable: true })
@@ -83,7 +89,13 @@ export class InfrastructureIdamTypescriptStack extends cdk.Stack {
       smsRoleExternalId: 'c87467be-4f34-11ea-b77f-2e728ce88125'
     });    
     userpool.addClient('IDAM_BACKEND', {
-        generateSecret: true,
+        generateSecret: false,
+        authFlows: {
+          adminUserPassword: false,
+          custom: true,
+          userPassword: true,
+          userSrp: true
+        },
         oAuth: {
           callbackUrls: ["http://localhost:3000/success"],
           flows: {
