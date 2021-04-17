@@ -2,6 +2,7 @@
 import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
 import { InfrastructureIdamTypescriptStack } from '../lib/infrastructure-idam-typescript-stack';
+import { Pipeline } from '../lib/pipeline'
 
 const app = new cdk.App();
 new InfrastructureIdamTypescriptStack(app, 'InfrastructureIdamTypescriptStack', {
@@ -19,3 +20,11 @@ new InfrastructureIdamTypescriptStack(app, 'InfrastructureIdamTypescriptStack', 
 
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 });
+
+new Pipeline(app, 'Pipeline',{
+  github: {
+    owner: 'BenassiJosef',
+    repository: 'front-end-idam-typescript',
+  },
+  env: { region: 'eu-west-1' },
+})
