@@ -2,6 +2,7 @@ import * as cdk from '@aws-cdk/core';
 import * as cognito from "@aws-cdk/aws-cognito";
 import { Duration, RemovalPolicy } from '@aws-cdk/core';
 import * as iam from "@aws-cdk/aws-iam"
+import * as lambda from "@aws-cdk/aws-lambda";
 
 export class InfrastructureIdamTypescriptStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -24,14 +25,16 @@ export class InfrastructureIdamTypescriptStack extends cdk.Stack {
       assumedBy: new iam.ServicePrincipal('cognito-idp.amazonaws.com'),
       inlinePolicies:{['sns-test']:snsPolicy}
     });
+
+    const customMessage = new lambda.Function(this, "CustomMessageHandler", {
+      runtime: lambda.Runtime.NODEJS_10_X,
+      code: lambda.Code.fromAsset("lambdas"),
+      handler: "customMessage.handler",
+    });
+
     const userpool = new cognito.UserPool(this, 'testUserPool', {
       userPoolName: 'test-cdk',
       selfSignUpEnabled: true,
-      userVerification: {
-        emailSubject: 'Verify your email for our the test-cdk app!',
-        emailBody: 'Thanks for signing up to our test-cdk app! Your verification code is {####}',
-        emailStyle: cognito.VerificationEmailStyle.CODE,
-      },
       userInvitation: {
         emailSubject: 'Invite to join our test app!',
         emailBody: 'Hello {username}, you have been invited to join our test app! Your temporary password is {####}',
@@ -86,8 +89,8 @@ export class InfrastructureIdamTypescriptStack extends cdk.Stack {
         otp: true
       },
       smsRole: poolSmsRole,
-      smsRoleExternalId: 'c87467be-4f34-11ea-b77f-2e728ce88125'
-    });    
+      smsRoleExternalId: 'c87467be-4f34-11ea-b77f-2e728ce88125',
+    });   
     userpool.addClient('IDAM_BACKEND', {
         generateSecret: false,
         authFlows: {
@@ -109,5 +112,8 @@ export class InfrastructureIdamTypescriptStack extends cdk.Stack {
     
     });
 
+    userpool.addTrigger({
+        operationName: "customMessage"
+    },customMessage);
   }
 }
