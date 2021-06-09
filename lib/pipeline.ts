@@ -4,6 +4,9 @@ import * as S3 from '@aws-cdk/aws-s3'
 import * as CodePipeline from '@aws-cdk/aws-codepipeline'
 import * as CodePipelineAction from '@aws-cdk/aws-codepipeline-actions'
 import * as cloudfront from '@aws-cdk/aws-cloudfront';
+import * as route53 from '@aws-cdk/aws-route53';
+import * as certificateManager from '@aws-cdk/aws-certificatemanager';
+import * as targets from '@aws-cdk/aws-route53-targets';
 
 export interface PipelineProps extends CDK.StackProps {
   github: {
@@ -87,15 +90,41 @@ export class Pipeline extends CDK.Stack {
     })
 
   // Cloudfront uses bucket created above for content
-   const cf =  new cloudfront.CloudFrontWebDistribution(this, "CDKIdamUiStaticDistribution", {
+
+
+  const domainName = "idam.link";
+  const alternativeDomains = "*.idam.link";
+
+  const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this,'idam.link',{
+    hostedZoneId: 'Z0483838INILSJESX4EG',
+    zoneName:'idam.link'
+  })
+
+  const certificate = new certificateManager.DnsValidatedCertificate(this, 'Certificate', {
+    domainName: 'idam.link',
+    hostedZone,
+    region: 'us-east-1',
+  });  
+
+  const cloudFrontOAI = new cloudfront.OriginAccessIdentity(this, 'OAI');
+
+  const cf =  new cloudfront.CloudFrontWebDistribution(this, "CDKIdamUiStaticDistribution", {
       originConfigs: [
         {
           s3OriginSource: {
-            s3BucketSource: bucketWebsite
+            s3BucketSource: bucketWebsite,
+            originAccessIdentity: cloudFrontOAI,
           },
           behaviors: [{isDefaultBehavior: true}]
         },
-      ],
+      ],viewerCertificate: cloudfront.ViewerCertificate.fromAcmCertificate(
+        certificate, // 1
+        {
+          aliases: ['idam.link'],
+          securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1, // 2
+          sslMethod: cloudfront.SSLMethod.SNI, // 3
+        },
+      ),
       errorConfigurations:[{
         errorCode: 403,
         errorCachingMinTtl: 60,
@@ -103,10 +132,15 @@ export class Pipeline extends CDK.Stack {
         responseCode: 200
       }],
     });
+
+    new route53.ARecord(this, 'Alias', {
+      zone: hostedZone,
+      target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(cf))
+    });
   
     new CDK.CfnOutput(this, 'CFURL', {
       value: cf.distributionDomainName,
-      description: 'CF URL',
+      description: 'CF-URL',
     })
   
   }
