@@ -75,7 +75,7 @@ export class InfrastructureIdamTypescriptStack extends cdk.Stack {
       },
       signInCaseSensitive: false,
       passwordPolicy: {
-        minLength: 10,
+        minLength: 8,
         requireLowercase: false,
         requireUppercase: false,
         requireDigits: false,

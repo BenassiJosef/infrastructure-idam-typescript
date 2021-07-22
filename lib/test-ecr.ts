@@ -13,6 +13,7 @@ import * as CodePipelineAction from '@aws-cdk/aws-codepipeline-actions'
 import * as CodeBuild from '@aws-cdk/aws-codebuild'
 import {Certificate, CertificateValidation} from '@aws-cdk/aws-certificatemanager';
 import * as route53 from '@aws-cdk/aws-route53';
+import { Secret } from '@aws-cdk/aws-secretsmanager';
 
 export interface PipelineProps extends CDK.StackProps {
     github: {
@@ -64,7 +65,14 @@ export class ECRStack extends cdk.Stack {
         image: ecs.ContainerImage.fromRegistry("amazon/amazon-ecs-sample"),
         memoryLimitMiB: 256,
         cpu: 256,
-        logging: logging
+        logging: logging,
+        secrets: {
+          AWS_ACCESS_KEY_ID: ecs.Secret.fromSecretsManager(Secret.fromSecretNameV2(this, "access_key", "AWS_ACCESS_KEY_ID")),
+          AWS_SECRET_ACCESS_KEY: ecs.Secret.fromSecretsManager(Secret.fromSecretNameV2(this, "secret_access_key", "AWS_SECRET_ACCESS_KEY")),
+          AWS_REGION: ecs.Secret.fromSecretsManager(Secret.fromSecretNameV2(this, "region", "AWS_REGION")),
+          AWS_USER_POOL_ID: ecs.Secret.fromSecretsManager(Secret.fromSecretNameV2(this, "pool_id", "AWS_USER_POOL_ID")),
+          AWS_USER_POOL_CLIENT_ID: ecs.Secret.fromSecretsManager(Secret.fromSecretNameV2(this, "pool_client_id", "AWS_USER_POOL_CLIENT_ID"))
+        }
       });
   
       container.addPortMappings({
